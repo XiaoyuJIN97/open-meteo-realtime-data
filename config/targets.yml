@@ -1,0 +1,20 @@
+countries: [BE, FR, DE]
+targets: [load, solar, onshore, offshore]
+
+open_meteo:
+  forecast_url: https://api.open-meteo.com/v1/forecast
+  historical_forecast_url: https://historical-forecast-api.open-meteo.com/v1/forecast
+  hourly:
+    - temperature_2m
+    - relative_humidity_2m
+    - shortwave_radiation
+    - wind_speed_100m
+    - wind_direction_100m
+  timezone: UTC
+  wind_speed_unit: ms
+
+defaults:
+  rolling_days: 100
+  forecast_days: 3
+  request_timeout_seconds: 45
+  retries: 3

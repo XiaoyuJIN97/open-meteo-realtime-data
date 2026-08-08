@@ -1,0 +1,15 @@
+[project]
+name = "open-meteo-realtime-data"
+version = "0.1.0"
+description = "Collect 4-point Open-Meteo weather data for real-time energy forecasting."
+requires-python = ">=3.10"
+dependencies = [
+  "pandas>=2.2",
+  "numpy>=1.26",
+  "requests>=2.32",
+  "pyyaml>=6.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
