@@ -31,6 +31,7 @@ class FetchConfig:
     wind_speed_unit: str
     timeout: int
     retries: int
+    chunk_days: int
 
 
 def load_yaml(path: Path) -> dict[str, Any]:
@@ -50,6 +51,7 @@ def load_config() -> tuple[dict[str, Any], FetchConfig]:
         wind_speed_unit=open_meteo["wind_speed_unit"],
         timeout=int(defaults["request_timeout_seconds"]),
         retries=int(defaults["retries"]),
+        chunk_days=int(defaults["chunk_days"]),
     )
     return config, fetch_config
 
@@ -71,7 +73,7 @@ def request_json(url: str, params: dict[str, Any], *, timeout: int, retries: int
     last_error: Exception | None = None
     for attempt in range(retries):
         try:
-            response = requests.get(url, params=params, timeout=timeout)
+            response = requests.get(url, params=params, timeout=(10, timeout))
             response.raise_for_status()
             return response.json()
         except Exception as exc:
@@ -134,26 +136,28 @@ def fetch_weather(country: str, target: str, start: date, end: date, config: Fet
     if start < today:
         historical_end = min(end, today - timedelta(days=1))
         if historical_end >= start:
+            for chunk_start, chunk_end in date_chunks(start, historical_end, config.chunk_days):
+                parts.append(
+                    fetch_endpoint(
+                        url=config.historical_forecast_url,
+                        points=points,
+                        start_date=chunk_start,
+                        end_date=chunk_end,
+                        config=config,
+                    )
+                )
+    if end >= today:
+        forecast_start = max(start, today)
+        for chunk_start, chunk_end in date_chunks(forecast_start, end, config.chunk_days):
             parts.append(
                 fetch_endpoint(
-                    url=config.historical_forecast_url,
+                    url=config.forecast_url,
                     points=points,
-                    start_date=start,
-                    end_date=historical_end,
+                    start_date=chunk_start,
+                    end_date=chunk_end,
                     config=config,
                 )
             )
-    if end >= today:
-        forecast_start = max(start, today)
-        parts.append(
-            fetch_endpoint(
-                url=config.forecast_url,
-                points=points,
-                start_date=forecast_start,
-                end_date=end,
-                config=config,
-            )
-        )
     if not parts:
         return pd.DataFrame()
 
@@ -167,6 +171,16 @@ def fetch_weather(country: str, target: str, start: date, end: date, config: Fet
     frame["source"] = "open-meteo"
     frame["updated_at_utc"] = datetime.now(UTC).isoformat(timespec="seconds")
     return frame.reset_index(drop=True)
+
+
+def date_chunks(start: date, end: date, chunk_days: int) -> list[tuple[date, date]]:
+    chunks = []
+    cursor = start
+    while cursor <= end:
+        chunk_end = min(end, cursor + timedelta(days=chunk_days - 1))
+        chunks.append((cursor, chunk_end))
+        cursor = chunk_end + timedelta(days=1)
+    return chunks
 
 
 def write_update(frame: pd.DataFrame, country: str, target: str, run_id: str) -> Path:
@@ -238,7 +252,6 @@ def main() -> None:
         raise ValueError("end date must be after start date")
 
     run_id = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
-    manifest_rows: list[dict[str, Any]] = []
     for country in countries:
         for target in targets:
             frame = fetch_weather(country, target, start, end, fetch_config)
@@ -246,20 +259,21 @@ def main() -> None:
                 continue
             update_path = write_update(frame, country, target, run_id)
             append_raw(frame, country, target)
-            manifest_rows.append(
-                {
-                    "run_id": run_id,
-                    "collection_time_utc": datetime.now(UTC).isoformat(timespec="seconds"),
-                    "country": country,
-                    "target": target,
-                    "rows": len(frame),
-                    "window_start_utc": pd.to_datetime(frame["timestamp_utc"], utc=True).min().isoformat(),
-                    "window_end_utc": pd.to_datetime(frame["timestamp_utc"], utc=True).max().isoformat(),
-                    "path": str(update_path.relative_to(REPO_ROOT)),
-                }
+            append_manifest(
+                [
+                    {
+                        "run_id": run_id,
+                        "collection_time_utc": datetime.now(UTC).isoformat(timespec="seconds"),
+                        "country": country,
+                        "target": target,
+                        "rows": len(frame),
+                        "window_start_utc": pd.to_datetime(frame["timestamp_utc"], utc=True).min().isoformat(),
+                        "window_end_utc": pd.to_datetime(frame["timestamp_utc"], utc=True).max().isoformat(),
+                        "path": str(update_path.relative_to(REPO_ROOT)),
+                    }
+                ]
             )
             print(f"{country} {target}: wrote {len(frame)} rows")
-    append_manifest(manifest_rows)
 
 
 if __name__ == "__main__":

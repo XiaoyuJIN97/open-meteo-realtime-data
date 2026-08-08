@@ -18,3 +18,4 @@ defaults:
   forecast_days: 3
   request_timeout_seconds: 45
   retries: 3
+  chunk_days: 14
