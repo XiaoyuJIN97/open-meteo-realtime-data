@@ -335,9 +335,15 @@ def main() -> None:
         raise ValueError("end date must be after start date")
 
     run_id = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+    failures = []
     for country in countries:
         for target in targets:
-            frame = fetch_weather(country, target, start, end, fetch_config)
+            try:
+                frame = fetch_weather(country, target, start, end, fetch_config)
+            except Exception as exc:
+                failures.append({"country": country, "target": target, "error": str(exc)})
+                print(f"WARNING: skipped {country} {target}: {exc}")
+                continue
             if frame.empty:
                 continue
             update_path = write_update(frame, country, target, run_id)
@@ -357,6 +363,8 @@ def main() -> None:
                 ]
             )
             print(f"{country} {target}: wrote {len(frame)} rows")
+    if failures:
+        print(f"WARNING: completed with {len(failures)} skipped country/target refreshes")
 
 
 if __name__ == "__main__":

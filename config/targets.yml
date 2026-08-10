@@ -16,6 +16,6 @@ open_meteo:
 defaults:
   rolling_days: 14
   forecast_days: 3
-  request_timeout_seconds: 90
-  retries: 5
+  request_timeout_seconds: 30
+  retries: 2
   chunk_days: 7
