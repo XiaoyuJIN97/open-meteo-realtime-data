@@ -4,7 +4,7 @@ from datetime import date
 
 import pandas as pd
 
-from scripts.fetch_open_meteo import FetchConfig, append_raw, fetch_endpoint_with_fallback
+from scripts.fetch_open_meteo import FetchConfig, append_raw, fetch_endpoint_with_fallback, missing_historical_ranges
 
 
 def test_append_raw_deduplicates_year(tmp_path, monkeypatch):
@@ -97,3 +97,18 @@ def test_fetch_endpoint_daily_fallback_skips_bad_days(monkeypatch):
 
     assert len(frames) == 2
     assert [frame["timestamp_utc"].iloc[0].date() for frame in frames] == [date(2026, 8, 1), date(2026, 8, 3)]
+
+
+def test_missing_historical_ranges_skip_complete_raw_days(tmp_path, monkeypatch):
+    import scripts.fetch_open_meteo as fetcher
+
+    monkeypatch.setattr(fetcher, "RAW_DIR", tmp_path / "raw")
+    path = tmp_path / "raw" / "BE" / "load" / "2026.csv"
+    path.parent.mkdir(parents=True)
+    complete_day = pd.date_range("2026-08-01T00:00:00Z", periods=24, freq="h")
+    incomplete_day = pd.date_range("2026-08-02T00:00:00Z", periods=23, freq="h")
+    pd.DataFrame({"timestamp_utc": [*complete_day, *incomplete_day]}).to_csv(path, index=False)
+
+    ranges = missing_historical_ranges("BE", "load", date(2026, 8, 1), date(2026, 8, 3))
+
+    assert ranges == [(date(2026, 8, 2), date(2026, 8, 3))]

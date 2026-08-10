@@ -176,16 +176,17 @@ def fetch_weather(country: str, target: str, start: date, end: date, config: Fet
     if start < today:
         historical_end = min(end, today - timedelta(days=1))
         if historical_end >= start:
-            for chunk_start, chunk_end in date_chunks(start, historical_end, config.chunk_days):
-                parts.extend(
-                    fetch_endpoint_with_fallback(
-                        url=config.historical_forecast_url,
-                        points=points,
-                        start_date=chunk_start,
-                        end_date=chunk_end,
-                        config=config,
+            for missing_start, missing_end in missing_historical_ranges(country, target, start, historical_end):
+                for chunk_start, chunk_end in date_chunks(missing_start, missing_end, config.chunk_days):
+                    parts.extend(
+                        fetch_endpoint_with_fallback(
+                            url=config.historical_forecast_url,
+                            points=points,
+                            start_date=chunk_start,
+                            end_date=chunk_end,
+                            config=config,
+                        )
                     )
-                )
     if end >= today:
         forecast_start = max(start, today)
         for chunk_start, chunk_end in date_chunks(forecast_start, end, config.chunk_days):
@@ -221,6 +222,48 @@ def date_chunks(start: date, end: date, chunk_days: int) -> list[tuple[date, dat
         chunks.append((cursor, chunk_end))
         cursor = chunk_end + timedelta(days=1)
     return chunks
+
+
+def raw_complete_dates(country: str, target: str, start: date, end: date) -> set[date]:
+    complete: set[date] = set()
+    for year in range(start.year, end.year + 1):
+        path = RAW_DIR / country / target / f"{year:04d}.csv"
+        if not path.exists():
+            continue
+        frame = pd.read_csv(path, usecols=["timestamp_utc"])
+        timestamps = pd.to_datetime(frame["timestamp_utc"], utc=True, errors="coerce").dropna()
+        counts = timestamps.dt.date.value_counts()
+        complete.update(day for day, count in counts.items() if count >= 24)
+    return {day for day in complete if start <= day <= end}
+
+
+def missing_historical_ranges(country: str, target: str, start: date, end: date) -> list[tuple[date, date]]:
+    complete = raw_complete_dates(country, target, start, end)
+    missing = [day for day in date_span(start, end) if day not in complete]
+    if not missing:
+        return []
+
+    ranges = []
+    range_start = missing[0]
+    previous = missing[0]
+    for day in missing[1:]:
+        if day == previous + timedelta(days=1):
+            previous = day
+            continue
+        ranges.append((range_start, previous))
+        range_start = day
+        previous = day
+    ranges.append((range_start, previous))
+    return ranges
+
+
+def date_span(start: date, end: date) -> list[date]:
+    days = []
+    cursor = start
+    while cursor <= end:
+        days.append(cursor)
+        cursor += timedelta(days=1)
+    return days
 
 
 def write_update(frame: pd.DataFrame, country: str, target: str, run_id: str) -> Path:
