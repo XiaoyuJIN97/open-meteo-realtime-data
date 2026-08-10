@@ -14,7 +14,7 @@ open_meteo:
   wind_speed_unit: ms
 
 defaults:
-  rolling_days: 100
+  rolling_days: 14
   forecast_days: 3
   request_timeout_seconds: 90
   retries: 5

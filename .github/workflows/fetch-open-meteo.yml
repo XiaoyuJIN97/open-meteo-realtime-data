@@ -38,7 +38,7 @@ jobs:
           if [ -n "${{ github.event.inputs.start_date }}" ] && [ -n "${{ github.event.inputs.end_date }}" ]; then
             python scripts/fetch_open_meteo.py --start-date "${{ github.event.inputs.start_date }}" --end-date "${{ github.event.inputs.end_date }}"
           else
-            python scripts/fetch_open_meteo.py --rolling-days 100 --forecast-days 3
+            python scripts/fetch_open_meteo.py --rolling-days 14 --forecast-days 3
           fi
 
       - name: Commit changes

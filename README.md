@@ -46,10 +46,10 @@ python -m pip install -r requirements.txt
 python scripts/fetch_open_meteo.py --start-date 2026-05-01 --end-date 2026-08-09
 ```
 
-For the daily workflow, fetch a rolling context plus forecast window:
+For the daily workflow, refresh a small overlap plus the forecast window. The longer model context is read from the accumulated raw archive:
 
 ```bash
-python scripts/fetch_open_meteo.py --rolling-days 100 --forecast-days 3
+python scripts/fetch_open_meteo.py --rolling-days 14 --forecast-days 3
 ```
 
 ## GitHub Actions
