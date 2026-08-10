@@ -129,6 +129,41 @@ def fetch_endpoint(
     return weather.sort_values("timestamp_utc").reset_index(drop=True)
 
 
+def fetch_endpoint_with_fallback(
+    *,
+    url: str,
+    points: pd.DataFrame,
+    start_date: date,
+    end_date: date,
+    config: FetchConfig,
+) -> list[pd.DataFrame]:
+    try:
+        return [
+            fetch_endpoint(
+                url=url,
+                points=points,
+                start_date=start_date,
+                end_date=end_date,
+                config=config,
+            )
+        ]
+    except RuntimeError:
+        if start_date == end_date:
+            raise
+        frames = []
+        for day_start, day_end in date_chunks(start_date, end_date, 1):
+            frames.append(
+                fetch_endpoint(
+                    url=url,
+                    points=points,
+                    start_date=day_start,
+                    end_date=day_end,
+                    config=config,
+                )
+            )
+        return frames
+
+
 def fetch_weather(country: str, target: str, start: date, end: date, config: FetchConfig) -> pd.DataFrame:
     points = selected_points(country, target)
     today = datetime.now(UTC).date()
@@ -137,8 +172,8 @@ def fetch_weather(country: str, target: str, start: date, end: date, config: Fet
         historical_end = min(end, today - timedelta(days=1))
         if historical_end >= start:
             for chunk_start, chunk_end in date_chunks(start, historical_end, config.chunk_days):
-                parts.append(
-                    fetch_endpoint(
+                parts.extend(
+                    fetch_endpoint_with_fallback(
                         url=config.historical_forecast_url,
                         points=points,
                         start_date=chunk_start,
@@ -149,8 +184,8 @@ def fetch_weather(country: str, target: str, start: date, end: date, config: Fet
     if end >= today:
         forecast_start = max(start, today)
         for chunk_start, chunk_end in date_chunks(forecast_start, end, config.chunk_days):
-            parts.append(
-                fetch_endpoint(
+            parts.extend(
+                fetch_endpoint_with_fallback(
                     url=config.forecast_url,
                     points=points,
                     start_date=chunk_start,
