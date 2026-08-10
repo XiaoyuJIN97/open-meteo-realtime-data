@@ -73,7 +73,7 @@ def request_json(url: str, params: dict[str, Any], *, timeout: int, retries: int
     last_error: Exception | None = None
     for attempt in range(retries):
         try:
-            response = requests.get(url, params=params, timeout=(10, timeout))
+            response = requests.get(url, params=params, timeout=float(timeout))
             response.raise_for_status()
             return response.json()
         except Exception as exc:
@@ -147,20 +147,25 @@ def fetch_endpoint_with_fallback(
                 config=config,
             )
         ]
-    except RuntimeError:
+    except RuntimeError as chunk_error:
         if start_date == end_date:
             raise
         frames = []
         for day_start, day_end in date_chunks(start_date, end_date, 1):
-            frames.append(
-                fetch_endpoint(
-                    url=url,
-                    points=points,
-                    start_date=day_start,
-                    end_date=day_end,
-                    config=config,
+            try:
+                frames.append(
+                    fetch_endpoint(
+                        url=url,
+                        points=points,
+                        start_date=day_start,
+                        end_date=day_end,
+                        config=config,
+                    )
                 )
-            )
+            except RuntimeError as day_error:
+                print(f"WARNING: skipped Open-Meteo day {day_start} to {day_end}: {day_error}")
+        if not frames:
+            raise RuntimeError(f"Open-Meteo chunk failed and daily fallback returned no data: {chunk_error}") from chunk_error
         return frames
 
 

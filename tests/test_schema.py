@@ -64,3 +64,36 @@ def test_fetch_endpoint_falls_back_to_daily_chunks(monkeypatch):
         (date(2026, 8, 3), date(2026, 8, 3)),
     ]
     assert len(frames) == 3
+
+
+def test_fetch_endpoint_daily_fallback_skips_bad_days(monkeypatch):
+    import scripts.fetch_open_meteo as fetcher
+
+    def fake_fetch_endpoint(*, url, points, start_date, end_date, config):
+        if start_date != end_date or start_date == date(2026, 8, 2):
+            raise RuntimeError("request failed")
+        return pd.DataFrame({"timestamp_utc": [pd.Timestamp(start_date)]})
+
+    monkeypatch.setattr(fetcher, "fetch_endpoint", fake_fetch_endpoint)
+    points = pd.DataFrame({"point": [1], "gfs_lat": [50.0], "gfs_lon": [4.0]})
+    config = FetchConfig(
+        forecast_url="forecast",
+        historical_forecast_url="historical",
+        hourly=["temperature_2m"],
+        timezone="UTC",
+        wind_speed_unit="ms",
+        timeout=90,
+        retries=5,
+        chunk_days=7,
+    )
+
+    frames = fetch_endpoint_with_fallback(
+        url="historical",
+        points=points,
+        start_date=date(2026, 8, 1),
+        end_date=date(2026, 8, 3),
+        config=config,
+    )
+
+    assert len(frames) == 2
+    assert [frame["timestamp_utc"].iloc[0].date() for frame in frames] == [date(2026, 8, 1), date(2026, 8, 3)]
