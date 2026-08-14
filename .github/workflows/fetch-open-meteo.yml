@@ -2,7 +2,10 @@ name: Fetch Open-Meteo Weather Data
 
 on:
   schedule:
-    - cron: "15 16 * * *"
+    # GitHub cron is UTC-only. These two triggers bracket 16:30 Europe/Brussels
+    # across CEST/CET; the Brussels-time guard below keeps only the local 16:xx run.
+    - cron: "30 14 * * *"
+    - cron: "30 15 * * *"
   workflow_dispatch:
     inputs:
       start_date:
@@ -19,21 +22,40 @@ jobs:
   fetch:
     runs-on: ubuntu-latest
     steps:
+      - name: Brussels schedule guard
+        id: brussels_time
+        run: |
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          brussels_hour="$(TZ=Europe/Brussels date +%H)"
+          if [ "$brussels_hour" = "16" ]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping: current Europe/Brussels hour is ${brussels_hour}, not 16."
+          fi
+
       - name: Checkout data branch
+        if: steps.brussels_time.outputs.should_run == 'true'
         uses: actions/checkout@v4
         with:
           ref: data
           fetch-depth: 0
 
       - name: Set up Python
+        if: steps.brussels_time.outputs.should_run == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
       - name: Install dependencies
+        if: steps.brussels_time.outputs.should_run == 'true'
         run: python -m pip install -r requirements.txt
 
       - name: Fetch weather data
+        if: steps.brussels_time.outputs.should_run == 'true'
         run: |
           if [ -n "${{ github.event.inputs.start_date }}" ] && [ -n "${{ github.event.inputs.end_date }}" ]; then
             python scripts/fetch_open_meteo.py --start-date "${{ github.event.inputs.start_date }}" --end-date "${{ github.event.inputs.end_date }}"
@@ -42,6 +64,7 @@ jobs:
           fi
 
       - name: Commit changes
+        if: steps.brussels_time.outputs.should_run == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
