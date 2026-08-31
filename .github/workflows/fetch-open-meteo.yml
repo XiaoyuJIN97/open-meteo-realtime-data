@@ -2,10 +2,14 @@ name: Fetch Open-Meteo Weather Data
 
 on:
   schedule:
-    # GitHub cron is UTC-only. These two triggers bracket 16:30 Europe/Brussels
-    # across CEST/CET; the Brussels-time guard below keeps only the local 16:xx run.
+    # GitHub cron is UTC-only and can be delayed. These triggers bracket the
+    # intended 16:30 Europe/Brussels collection time across CEST/CET, with
+    # fallback attempts. The guard below allows late starts and a manifest check
+    # prevents duplicate same-day data commits.
     - cron: "30 14 * * *"
     - cron: "30 15 * * *"
+    - cron: "30 16 * * *"
+    - cron: "30 17 * * *"
   workflow_dispatch:
     inputs:
       start_date:
@@ -21,6 +25,9 @@ permissions:
 jobs:
   fetch:
     runs-on: ubuntu-latest
+    concurrency:
+      group: open-meteo-weather-${{ github.ref }}
+      cancel-in-progress: false
     steps:
       - name: Brussels schedule guard
         id: brussels_time
@@ -29,12 +36,12 @@ jobs:
             echo "should_run=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          brussels_hour="$(TZ=Europe/Brussels date +%H)"
-          if [ "$brussels_hour" = "16" ]; then
+          brussels_time="$(TZ=Europe/Brussels date +%H%M)"
+          if [ "$brussels_time" -ge 1630 ] && [ "$brussels_time" -le 2130 ]; then
             echo "should_run=true" >> "$GITHUB_OUTPUT"
           else
             echo "should_run=false" >> "$GITHUB_OUTPUT"
-            echo "Skipping: current Europe/Brussels hour is ${brussels_hour}, not 16."
+            echo "Skipping: current Europe/Brussels time is ${brussels_time}, outside 16:30-21:30."
           fi
 
       - name: Checkout data branch
@@ -50,12 +57,46 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
+      - name: Check whether today's weather archive is already updated
+        id: manifest_check
         if: steps.brussels_time.outputs.should_run == 'true'
+        run: |
+          python - <<'PY'
+          import csv
+          import os
+          from datetime import datetime
+          from pathlib import Path
+          from zoneinfo import ZoneInfo
+
+          today = datetime.now(ZoneInfo("Europe/Brussels")).date().isoformat()
+          manifest = Path("data/update_manifest.csv")
+          if not manifest.exists():
+            print("No manifest found; weather fetch should run.")
+            with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
+              handle.write("already_updated=false\n")
+            raise SystemExit
+
+          countries = {"BE", "FR", "DE"}
+          targets = {"load", "solar", "onshore", "offshore"}
+          seen = set()
+          with manifest.open("r", encoding="utf-8", newline="") as handle:
+            for row in csv.DictReader(handle):
+              collection_time = row.get("collection_time_utc", "")
+              if collection_time[:10] == today:
+                seen.add((row.get("country"), row.get("target")))
+          missing = sorted((country, target) for country in countries for target in targets if (country, target) not in seen)
+          already_updated = not missing
+          print("Weather manifest has all expected rows for today." if already_updated else f"Missing today's weather manifest rows: {missing[:8]}")
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
+            handle.write(f"already_updated={str(already_updated).lower()}\n")
+          PY
+
+      - name: Install dependencies
+        if: steps.brussels_time.outputs.should_run == 'true' && steps.manifest_check.outputs.already_updated != 'true'
         run: python -m pip install -r requirements.txt
 
       - name: Fetch weather data
-        if: steps.brussels_time.outputs.should_run == 'true'
+        if: steps.brussels_time.outputs.should_run == 'true' && steps.manifest_check.outputs.already_updated != 'true'
         run: |
           if [ -n "${{ github.event.inputs.start_date }}" ] && [ -n "${{ github.event.inputs.end_date }}" ]; then
             python scripts/fetch_open_meteo.py --start-date "${{ github.event.inputs.start_date }}" --end-date "${{ github.event.inputs.end_date }}"
@@ -64,7 +105,7 @@ jobs:
           fi
 
       - name: Commit changes
-        if: steps.brussels_time.outputs.should_run == 'true'
+        if: steps.brussels_time.outputs.should_run == 'true' && steps.manifest_check.outputs.already_updated != 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
