@@ -31,7 +31,6 @@ class FetchConfig:
     wind_speed_unit: str
     timeout: int
     retries: int
-    chunk_days: int
 
 
 def load_yaml(path: Path) -> dict[str, Any]:
@@ -51,7 +50,6 @@ def load_config() -> tuple[dict[str, Any], FetchConfig]:
         wind_speed_unit=open_meteo["wind_speed_unit"],
         timeout=int(defaults["request_timeout_seconds"]),
         retries=int(defaults["retries"]),
-        chunk_days=int(defaults["chunk_days"]),
     )
     return config, fetch_config
 
@@ -73,7 +71,7 @@ def request_json(url: str, params: dict[str, Any], *, timeout: int, retries: int
     last_error: Exception | None = None
     for attempt in range(retries):
         try:
-            response = requests.get(url, params=params, timeout=float(timeout))
+            response = requests.get(url, params=params, timeout=timeout)
             response.raise_for_status()
             return response.json()
         except Exception as exc:
@@ -129,46 +127,6 @@ def fetch_endpoint(
     return weather.sort_values("timestamp_utc").reset_index(drop=True)
 
 
-def fetch_endpoint_with_fallback(
-    *,
-    url: str,
-    points: pd.DataFrame,
-    start_date: date,
-    end_date: date,
-    config: FetchConfig,
-) -> list[pd.DataFrame]:
-    try:
-        return [
-            fetch_endpoint(
-                url=url,
-                points=points,
-                start_date=start_date,
-                end_date=end_date,
-                config=config,
-            )
-        ]
-    except RuntimeError as chunk_error:
-        if start_date == end_date:
-            raise
-        frames = []
-        for day_start, day_end in date_chunks(start_date, end_date, 1):
-            try:
-                frames.append(
-                    fetch_endpoint(
-                        url=url,
-                        points=points,
-                        start_date=day_start,
-                        end_date=day_end,
-                        config=config,
-                    )
-                )
-            except RuntimeError as day_error:
-                print(f"WARNING: skipped Open-Meteo day {day_start} to {day_end}: {day_error}")
-        if not frames:
-            raise RuntimeError(f"Open-Meteo chunk failed and daily fallback returned no data: {chunk_error}") from chunk_error
-        return frames
-
-
 def fetch_weather(country: str, target: str, start: date, end: date, config: FetchConfig) -> pd.DataFrame:
     points = selected_points(country, target)
     today = datetime.now(UTC).date()
@@ -176,29 +134,26 @@ def fetch_weather(country: str, target: str, start: date, end: date, config: Fet
     if start < today:
         historical_end = min(end, today - timedelta(days=1))
         if historical_end >= start:
-            for missing_start, missing_end in missing_historical_ranges(country, target, start, historical_end):
-                for chunk_start, chunk_end in date_chunks(missing_start, missing_end, config.chunk_days):
-                    parts.extend(
-                        fetch_endpoint_with_fallback(
-                            url=config.historical_forecast_url,
-                            points=points,
-                            start_date=chunk_start,
-                            end_date=chunk_end,
-                            config=config,
-                        )
-                    )
-    if end >= today:
-        forecast_start = max(start, today)
-        for chunk_start, chunk_end in date_chunks(forecast_start, end, config.chunk_days):
-            parts.extend(
-                fetch_endpoint_with_fallback(
-                    url=config.forecast_url,
+            parts.append(
+                fetch_endpoint(
+                    url=config.historical_forecast_url,
                     points=points,
-                    start_date=chunk_start,
-                    end_date=chunk_end,
+                    start_date=start,
+                    end_date=historical_end,
                     config=config,
                 )
             )
+    if end >= today:
+        forecast_start = max(start, today)
+        parts.append(
+            fetch_endpoint(
+                url=config.forecast_url,
+                points=points,
+                start_date=forecast_start,
+                end_date=end,
+                config=config,
+            )
+        )
     if not parts:
         return pd.DataFrame()
 
@@ -212,58 +167,6 @@ def fetch_weather(country: str, target: str, start: date, end: date, config: Fet
     frame["source"] = "open-meteo"
     frame["updated_at_utc"] = datetime.now(UTC).isoformat(timespec="seconds")
     return frame.reset_index(drop=True)
-
-
-def date_chunks(start: date, end: date, chunk_days: int) -> list[tuple[date, date]]:
-    chunks = []
-    cursor = start
-    while cursor <= end:
-        chunk_end = min(end, cursor + timedelta(days=chunk_days - 1))
-        chunks.append((cursor, chunk_end))
-        cursor = chunk_end + timedelta(days=1)
-    return chunks
-
-
-def raw_complete_dates(country: str, target: str, start: date, end: date) -> set[date]:
-    complete: set[date] = set()
-    for year in range(start.year, end.year + 1):
-        path = RAW_DIR / country / target / f"{year:04d}.csv"
-        if not path.exists():
-            continue
-        frame = pd.read_csv(path, usecols=["timestamp_utc"])
-        timestamps = pd.to_datetime(frame["timestamp_utc"], utc=True, errors="coerce").dropna()
-        counts = timestamps.dt.date.value_counts()
-        complete.update(day for day, count in counts.items() if count >= 24)
-    return {day for day in complete if start <= day <= end}
-
-
-def missing_historical_ranges(country: str, target: str, start: date, end: date) -> list[tuple[date, date]]:
-    complete = raw_complete_dates(country, target, start, end)
-    missing = [day for day in date_span(start, end) if day not in complete]
-    if not missing:
-        return []
-
-    ranges = []
-    range_start = missing[0]
-    previous = missing[0]
-    for day in missing[1:]:
-        if day == previous + timedelta(days=1):
-            previous = day
-            continue
-        ranges.append((range_start, previous))
-        range_start = day
-        previous = day
-    ranges.append((range_start, previous))
-    return ranges
-
-
-def date_span(start: date, end: date) -> list[date]:
-    days = []
-    cursor = start
-    while cursor <= end:
-        days.append(cursor)
-        cursor += timedelta(days=1)
-    return days
 
 
 def write_update(frame: pd.DataFrame, country: str, target: str, run_id: str) -> Path:
@@ -330,41 +233,37 @@ def main() -> None:
     args = parse_args()
     countries = args.countries.split(",") if args.countries else app_config["countries"]
     targets = args.targets.split(",") if args.targets else app_config["targets"]
+    excluded = {(item["country"], item["target"]) for item in app_config.get("excluded_series", [])}
     start, end = date_window(args, app_config["defaults"])
     if end < start:
         raise ValueError("end date must be after start date")
 
     run_id = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
-    failures = []
+    manifest_rows: list[dict[str, Any]] = []
     for country in countries:
         for target in targets:
-            try:
-                frame = fetch_weather(country, target, start, end, fetch_config)
-            except Exception as exc:
-                failures.append({"country": country, "target": target, "error": str(exc)})
-                print(f"WARNING: skipped {country} {target}: {exc}")
+            if (country, target) in excluded:
+                print(f"{country} {target}: skipped (configured unavailable series)")
                 continue
+            frame = fetch_weather(country, target, start, end, fetch_config)
             if frame.empty:
                 continue
             update_path = write_update(frame, country, target, run_id)
             append_raw(frame, country, target)
-            append_manifest(
-                [
-                    {
-                        "run_id": run_id,
-                        "collection_time_utc": datetime.now(UTC).isoformat(timespec="seconds"),
-                        "country": country,
-                        "target": target,
-                        "rows": len(frame),
-                        "window_start_utc": pd.to_datetime(frame["timestamp_utc"], utc=True).min().isoformat(),
-                        "window_end_utc": pd.to_datetime(frame["timestamp_utc"], utc=True).max().isoformat(),
-                        "path": str(update_path.relative_to(REPO_ROOT)),
-                    }
-                ]
+            manifest_rows.append(
+                {
+                    "run_id": run_id,
+                    "collection_time_utc": datetime.now(UTC).isoformat(timespec="seconds"),
+                    "country": country,
+                    "target": target,
+                    "rows": len(frame),
+                    "window_start_utc": pd.to_datetime(frame["timestamp_utc"], utc=True).min().isoformat(),
+                    "window_end_utc": pd.to_datetime(frame["timestamp_utc"], utc=True).max().isoformat(),
+                    "path": str(update_path.relative_to(REPO_ROOT)),
+                }
             )
             print(f"{country} {target}: wrote {len(frame)} rows")
-    if failures:
-        print(f"WARNING: completed with {len(failures)} skipped country/target refreshes")
+    append_manifest(manifest_rows)
 
 
 if __name__ == "__main__":

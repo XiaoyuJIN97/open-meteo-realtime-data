@@ -1,5 +1,8 @@
-countries: [BE, FR, DE]
+countries: [BE, FR, DE, NL, DK1, DK2, ES, PT]
 targets: [load, solar, onshore, offshore]
+
+excluded_series:
+  - {country: ES, target: offshore, reason: "No meaningful generation or ENTSO-E TSO forecast"}
 
 open_meteo:
   forecast_url: https://api.open-meteo.com/v1/forecast
@@ -14,8 +17,7 @@ open_meteo:
   wind_speed_unit: ms
 
 defaults:
-  rolling_days: 14
+  rolling_days: 100
   forecast_days: 3
-  request_timeout_seconds: 30
-  retries: 2
-  chunk_days: 7
+  request_timeout_seconds: 45
+  retries: 3
