@@ -76,15 +76,17 @@ jobs:
               handle.write("already_updated=false\n")
             raise SystemExit
 
-          countries = {"BE", "FR", "DE"}
+          countries = {"BE", "FR", "DE", "NL", "DK1", "DK2", "ES", "PT"}
           targets = {"load", "solar", "onshore", "offshore"}
+          expected = {(country, target) for country in countries for target in targets}
+          expected.remove(("ES", "offshore"))
           seen = set()
           with manifest.open("r", encoding="utf-8", newline="") as handle:
             for row in csv.DictReader(handle):
               collection_time = row.get("collection_time_utc", "")
               if collection_time[:10] == today:
                 seen.add((row.get("country"), row.get("target")))
-          missing = sorted((country, target) for country in countries for target in targets if (country, target) not in seen)
+          missing = sorted(expected - seen)
           already_updated = not missing
           print("Weather manifest has all expected rows for today." if already_updated else f"Missing today's weather manifest rows: {missing[:8]}")
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:

@@ -233,6 +233,7 @@ def main() -> None:
     args = parse_args()
     countries = args.countries.split(",") if args.countries else app_config["countries"]
     targets = args.targets.split(",") if args.targets else app_config["targets"]
+    excluded = {(item["country"], item["target"]) for item in app_config.get("excluded_series", [])}
     start, end = date_window(args, app_config["defaults"])
     if end < start:
         raise ValueError("end date must be after start date")
@@ -241,6 +242,9 @@ def main() -> None:
     manifest_rows: list[dict[str, Any]] = []
     for country in countries:
         for target in targets:
+            if (country, target) in excluded:
+                print(f"{country} {target}: skipped (configured unavailable series)")
+                continue
             frame = fetch_weather(country, target, start, end, fetch_config)
             if frame.empty:
                 continue
