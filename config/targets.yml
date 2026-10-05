@@ -1,5 +1,8 @@
-countries: [BE, FR, DE]
+countries: [BE, FR, DE, NL, DK1, DK2, ES, PT]
 targets: [load, solar, onshore, offshore]
+
+excluded_series:
+  - {country: ES, target: offshore, reason: "No meaningful generation or ENTSO-E TSO forecast"}
 
 open_meteo:
   forecast_url: https://api.open-meteo.com/v1/forecast
