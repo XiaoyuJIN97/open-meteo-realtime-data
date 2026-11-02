@@ -2,119 +2,125 @@ name: Fetch Open-Meteo Weather Data
 
 on:
   schedule:
-    # GitHub cron is UTC-only and can be delayed. These triggers bracket the
-    # intended 16:30 Europe/Brussels collection time across CEST/CET, with
-    # fallback attempts. The guard below allows late starts and a manifest check
-    # prevents duplicate same-day data commits.
+    # 16:30 local across summer/winter, with later retries for delayed GitHub jobs.
     - cron: "30 14 * * *"
     - cron: "30 15 * * *"
     - cron: "30 16 * * *"
     - cron: "30 17 * * *"
+    - cron: "30 19 * * *"
   workflow_dispatch:
     inputs:
       start_date:
-        description: Optional YYYY-MM-DD start date
+        description: Optional YYYY-MM-DD recovery start date
         required: false
       end_date:
-        description: Optional YYYY-MM-DD end date, inclusive
+        description: Optional YYYY-MM-DD recovery end date (inclusive)
         required: false
+      phase:
+        description: Collect current forecasts, recover history, or both
+        type: choice
+        options: [all, forecast, history]
+        default: all
 
 permissions:
   contents: write
 
+concurrency:
+  group: open-meteo-data-writer
+  cancel-in-progress: false
+
 jobs:
   fetch:
     runs-on: ubuntu-latest
-    concurrency:
-      group: open-meteo-weather-${{ github.ref }}
-      cancel-in-progress: false
+    timeout-minutes: 90
     steps:
       - name: Brussels schedule guard
-        id: brussels_time
+        id: clock
         run: |
           if [ "${{ github.event_name }}" != "schedule" ]; then
-            echo "should_run=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          brussels_time="$(TZ=Europe/Brussels date +%H%M)"
-          if [ "$brussels_time" -ge 1630 ] && [ "$brussels_time" -le 2130 ]; then
-            echo "should_run=true" >> "$GITHUB_OUTPUT"
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          elif [ "$(TZ=Europe/Brussels date +%H%M)" -ge 1630 ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
           else
-            echo "should_run=false" >> "$GITHUB_OUTPUT"
-            echo "Skipping: current Europe/Brussels time is ${brussels_time}, outside 16:30-21:30."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "Before the 16:30 Brussels collection window; no collection attempted." >> "$GITHUB_STEP_SUMMARY"
           fi
 
-      - name: Checkout data branch
-        if: steps.brussels_time.outputs.should_run == 'true'
+      # Code always comes from the workflow revision, never the historical data branch.
+      - uses: actions/checkout@v4
+        if: steps.clock.outputs.run == 'true'
+
+      - name: Checkout saved archive separately
+        if: steps.clock.outputs.run == 'true'
         uses: actions/checkout@v4
         with:
           ref: data
-          fetch-depth: 0
+          path: archive
+          fetch-depth: 1
+          filter: blob:none
+          sparse-checkout: |
+            data/raw
+            data/update_manifest.csv
+            data/status.json
 
-      - name: Set up Python
-        if: steps.brussels_time.outputs.should_run == 'true'
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
+        if: steps.clock.outputs.run == 'true'
         with:
           python-version: "3.11"
 
-      - name: Check whether today's weather archive is already updated
-        id: manifest_check
-        if: steps.brussels_time.outputs.should_run == 'true'
-        run: |
-          python - <<'PY'
-          import csv
-          import os
-          from datetime import datetime
-          from pathlib import Path
-          from zoneinfo import ZoneInfo
-
-          today = datetime.now(ZoneInfo("Europe/Brussels")).date().isoformat()
-          manifest = Path("data/update_manifest.csv")
-          if not manifest.exists():
-            print("No manifest found; weather fetch should run.")
-            with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
-              handle.write("already_updated=false\n")
-            raise SystemExit
-
-          countries = {"BE", "FR", "DE", "NL", "DK1", "DK2", "ES", "PT"}
-          targets = {"load", "solar", "onshore", "offshore"}
-          expected = {(country, target) for country in countries for target in targets}
-          expected.remove(("ES", "offshore"))
-          seen = set()
-          with manifest.open("r", encoding="utf-8", newline="") as handle:
-            for row in csv.DictReader(handle):
-              collection_time = row.get("collection_time_utc", "")
-              if collection_time[:10] == today:
-                seen.add((row.get("country"), row.get("target")))
-          missing = sorted(expected - seen)
-          already_updated = not missing
-          print("Weather manifest has all expected rows for today." if already_updated else f"Missing today's weather manifest rows: {missing[:8]}")
-          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
-            handle.write(f"already_updated={str(already_updated).lower()}\n")
-          PY
-
       - name: Install dependencies
-        if: steps.brussels_time.outputs.should_run == 'true' && steps.manifest_check.outputs.already_updated != 'true'
+        if: steps.clock.outputs.run == 'true'
         run: python -m pip install -r requirements.txt
 
-      - name: Fetch weather data
-        if: steps.brussels_time.outputs.should_run == 'true' && steps.manifest_check.outputs.already_updated != 'true'
+      - name: Check saved data freshness and coverage
+        if: steps.clock.outputs.run == 'true'
+        id: fresh
         run: |
-          if [ -n "${{ github.event.inputs.start_date }}" ] && [ -n "${{ github.event.inputs.end_date }}" ]; then
-            python scripts/fetch_open_meteo.py --start-date "${{ github.event.inputs.start_date }}" --end-date "${{ github.event.inputs.end_date }}"
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "complete=$(python -m scripts.check_freshness --data-dir archive/data)" >> "$GITHUB_OUTPUT"
           else
-            python scripts/fetch_open_meteo.py --rolling-days 14 --forecast-days 3
+            echo "complete=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Commit changes
-        if: steps.brussels_time.outputs.should_run == 'true' && steps.manifest_check.outputs.already_updated != 'true'
+      - name: Collect current forecasts and resume missing history
+        if: steps.clock.outputs.run == 'true' && steps.fresh.outputs.complete != 'true'
+        id: collect
+        continue-on-error: true
+        env:
+          START_DATE: ${{ inputs.start_date }}
+          END_DATE: ${{ inputs.end_date }}
+          PHASE: ${{ inputs.phase || 'all' }}
+        run: |
+          ARGS=(--data-dir archive/data --phase "$PHASE" --rolling-days 100 --forecast-days 3 --chunk-days 3)
+          if [ -n "$START_DATE" ] || [ -n "$END_DATE" ]; then
+            test -n "$START_DATE" && test -n "$END_DATE"
+            ARGS+=(--start-date "$START_DATE" --end-date "$END_DATE")
+          fi
+          python -u scripts/fetch_open_meteo.py "${ARGS[@]}"
+
+      - name: Publish successful series even if another request failed
+        if: always() && steps.collect.outcome != 'skipped' && steps.collect.outcome != ''
+        working-directory: archive
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data
-          if git diff --cached --quiet; then
-            echo "No data changes."
+          git add --sparse data
+          if ! git diff --cached --quiet; then
+            git commit -m "Update weather archive and collection status"
+            git push origin HEAD:data
+          fi
+
+      - name: Report collection status
+        if: always() && steps.clock.outputs.run == 'true'
+        env:
+          COLLECTION_OUTCOME: ${{ steps.collect.outcome }}
+          ALREADY_FRESH: ${{ steps.fresh.outputs.complete }}
+        run: |
+          if [ "$ALREADY_FRESH" = "true" ]; then
+            echo "Archive already refreshed after 16:30 Brussels; full context and forecast coverage verified." >> "$GITHUB_STEP_SUMMARY"
+          elif [ "$COLLECTION_OUTCOME" = "success" ]; then
+            echo "Weather collection completed and coverage verified. See data/status.json on the data branch." >> "$GITHUB_STEP_SUMMARY"
           else
-            git commit -m "Update Open-Meteo weather data"
-            git push origin data
+            echo "Weather archive remains incomplete. Successful series were preserved; inspect data/status.json and retry." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
           fi
