@@ -1,28 +1,227 @@
 {
-  "run_id": "20261102T094602Z",
-  "generated_at_utc": "2026-11-02T09:46:04+00:00",
+  "run_id": "20261102T095757Z",
+  "generated_at_utc": "2026-11-02T10:09:34+00:00",
   "window_start": "2026-07-25",
   "window_end": "2026-11-05",
   "completed": [
     {
-      "country": "DK2",
+      "country": "BE",
       "target": "load",
-      "phase": "history",
-      "rows": 72
+      "phase": "forecast",
+      "rows": 96
+    },
+    {
+      "country": "BE",
+      "target": "solar",
+      "phase": "forecast",
+      "rows": 96
+    },
+    {
+      "country": "BE",
+      "target": "onshore",
+      "phase": "forecast",
+      "rows": 96
+    },
+    {
+      "country": "BE",
+      "target": "offshore",
+      "phase": "forecast",
+      "rows": 96
+    },
+    {
+      "country": "FR",
+      "target": "load",
+      "phase": "forecast",
+      "rows": 96
+    },
+    {
+      "country": "FR",
+      "target": "solar",
+      "phase": "forecast",
+      "rows": 96
+    },
+    {
+      "country": "FR",
+      "target": "onshore",
+      "phase": "forecast",
+      "rows": 96
+    },
+    {
+      "country": "DE",
+      "target": "solar",
+      "phase": "forecast",
+      "rows": 96
+    },
+    {
+      "country": "DE",
+      "target": "onshore",
+      "phase": "forecast",
+      "rows": 96
+    },
+    {
+      "country": "DE",
+      "target": "offshore",
+      "phase": "forecast",
+      "rows": 96
+    },
+    {
+      "country": "NL",
+      "target": "load",
+      "phase": "forecast",
+      "rows": 96
+    },
+    {
+      "country": "NL",
+      "target": "onshore",
+      "phase": "forecast",
+      "rows": 96
+    },
+    {
+      "country": "NL",
+      "target": "offshore",
+      "phase": "forecast",
+      "rows": 96
+    },
+    {
+      "country": "DK1",
+      "target": "load",
+      "phase": "forecast",
+      "rows": 96
+    },
+    {
+      "country": "DK1",
+      "target": "solar",
+      "phase": "forecast",
+      "rows": 96
+    },
+    {
+      "country": "DK1",
+      "target": "onshore",
+      "phase": "forecast",
+      "rows": 96
     },
     {
       "country": "DK2",
       "target": "load",
-      "phase": "history",
-      "rows": 72
+      "phase": "forecast",
+      "rows": 96
+    },
+    {
+      "country": "DK2",
+      "target": "solar",
+      "phase": "forecast",
+      "rows": 96
+    },
+    {
+      "country": "DK2",
+      "target": "offshore",
+      "phase": "forecast",
+      "rows": 96
+    },
+    {
+      "country": "ES",
+      "target": "load",
+      "phase": "forecast",
+      "rows": 96
+    },
+    {
+      "country": "ES",
+      "target": "solar",
+      "phase": "forecast",
+      "rows": 96
+    },
+    {
+      "country": "ES",
+      "target": "onshore",
+      "phase": "forecast",
+      "rows": 96
+    },
+    {
+      "country": "PT",
+      "target": "solar",
+      "phase": "forecast",
+      "rows": 96
+    },
+    {
+      "country": "PT",
+      "target": "onshore",
+      "phase": "forecast",
+      "rows": 96
+    },
+    {
+      "country": "PT",
+      "target": "offshore",
+      "phase": "forecast",
+      "rows": 96
     }
   ],
-  "failures": [],
+  "failures": [
+    {
+      "country": "FR",
+      "target": "offshore",
+      "phase": "forecast",
+      "start": "2026-11-02",
+      "end": "2026-11-05",
+      "error": "Open-Meteo request failed after 2 attempts: HTTPSConnectionPool(host='api.open-meteo.com', port=443): Read timed out. (read timeout=30)"
+    },
+    {
+      "country": "DE",
+      "target": "load",
+      "phase": "forecast",
+      "start": "2026-11-02",
+      "end": "2026-11-05",
+      "error": "Open-Meteo request failed after 2 attempts: HTTPSConnectionPool(host='api.open-meteo.com', port=443): Read timed out. (read timeout=30)"
+    },
+    {
+      "country": "NL",
+      "target": "solar",
+      "phase": "forecast",
+      "start": "2026-11-02",
+      "end": "2026-11-05",
+      "error": "Open-Meteo request failed after 2 attempts: HTTPSConnectionPool(host='api.open-meteo.com', port=443): Read timed out. (read timeout=30)"
+    },
+    {
+      "country": "DK1",
+      "target": "offshore",
+      "phase": "forecast",
+      "start": "2026-11-02",
+      "end": "2026-11-05",
+      "error": "Open-Meteo request failed after 2 attempts: HTTPSConnectionPool(host='api.open-meteo.com', port=443): Read timed out. (read timeout=30)"
+    },
+    {
+      "country": "DK2",
+      "target": "onshore",
+      "phase": "forecast",
+      "start": "2026-11-02",
+      "end": "2026-11-05",
+      "error": "Open-Meteo request failed after 2 attempts: HTTPSConnectionPool(host='api.open-meteo.com', port=443): Read timed out. (read timeout=30)"
+    },
+    {
+      "country": "PT",
+      "target": "load",
+      "phase": "forecast",
+      "start": "2026-11-02",
+      "end": "2026-11-05",
+      "error": "Open-Meteo request failed after 2 attempts: HTTPSConnectionPool(host='api.open-meteo.com', port=443): Read timed out. (read timeout=30)"
+    }
+  ],
   "coverage": [
     {
       "country": "BE",
       "target": "load",
+      "phase": "forecast",
+      "missing_hours": 0
+    },
+    {
+      "country": "BE",
+      "target": "load",
       "phase": "history",
+      "missing_hours": 0
+    },
+    {
+      "country": "BE",
+      "target": "solar",
+      "phase": "forecast",
       "missing_hours": 0
     },
     {
@@ -34,7 +233,19 @@
     {
       "country": "BE",
       "target": "onshore",
+      "phase": "forecast",
+      "missing_hours": 0
+    },
+    {
+      "country": "BE",
+      "target": "onshore",
       "phase": "history",
+      "missing_hours": 0
+    },
+    {
+      "country": "BE",
+      "target": "offshore",
+      "phase": "forecast",
       "missing_hours": 0
     },
     {
@@ -46,7 +257,19 @@
     {
       "country": "FR",
       "target": "load",
+      "phase": "forecast",
+      "missing_hours": 0
+    },
+    {
+      "country": "FR",
+      "target": "load",
       "phase": "history",
+      "missing_hours": 0
+    },
+    {
+      "country": "FR",
+      "target": "solar",
+      "phase": "forecast",
       "missing_hours": 0
     },
     {
@@ -58,7 +281,19 @@
     {
       "country": "FR",
       "target": "onshore",
+      "phase": "forecast",
+      "missing_hours": 0
+    },
+    {
+      "country": "FR",
+      "target": "onshore",
       "phase": "history",
+      "missing_hours": 0
+    },
+    {
+      "country": "FR",
+      "target": "offshore",
+      "phase": "forecast",
       "missing_hours": 0
     },
     {
@@ -70,7 +305,19 @@
     {
       "country": "DE",
       "target": "load",
+      "phase": "forecast",
+      "missing_hours": 0
+    },
+    {
+      "country": "DE",
+      "target": "load",
       "phase": "history",
+      "missing_hours": 0
+    },
+    {
+      "country": "DE",
+      "target": "solar",
+      "phase": "forecast",
       "missing_hours": 0
     },
     {
@@ -82,7 +329,19 @@
     {
       "country": "DE",
       "target": "onshore",
+      "phase": "forecast",
+      "missing_hours": 0
+    },
+    {
+      "country": "DE",
+      "target": "onshore",
       "phase": "history",
+      "missing_hours": 0
+    },
+    {
+      "country": "DE",
+      "target": "offshore",
+      "phase": "forecast",
       "missing_hours": 0
     },
     {
@@ -94,7 +353,19 @@
     {
       "country": "NL",
       "target": "load",
+      "phase": "forecast",
+      "missing_hours": 0
+    },
+    {
+      "country": "NL",
+      "target": "load",
       "phase": "history",
+      "missing_hours": 0
+    },
+    {
+      "country": "NL",
+      "target": "solar",
+      "phase": "forecast",
       "missing_hours": 0
     },
     {
@@ -106,7 +377,19 @@
     {
       "country": "NL",
       "target": "onshore",
+      "phase": "forecast",
+      "missing_hours": 0
+    },
+    {
+      "country": "NL",
+      "target": "onshore",
       "phase": "history",
+      "missing_hours": 0
+    },
+    {
+      "country": "NL",
+      "target": "offshore",
+      "phase": "forecast",
       "missing_hours": 0
     },
     {
@@ -118,13 +401,31 @@
     {
       "country": "DK1",
       "target": "load",
+      "phase": "forecast",
+      "missing_hours": 0
+    },
+    {
+      "country": "DK1",
+      "target": "load",
       "phase": "history",
       "missing_hours": 0
     },
     {
       "country": "DK1",
       "target": "solar",
+      "phase": "forecast",
+      "missing_hours": 0
+    },
+    {
+      "country": "DK1",
+      "target": "solar",
       "phase": "history",
+      "missing_hours": 0
+    },
+    {
+      "country": "DK1",
+      "target": "onshore",
+      "phase": "forecast",
       "missing_hours": 0
     },
     {
@@ -136,7 +437,19 @@
     {
       "country": "DK1",
       "target": "offshore",
+      "phase": "forecast",
+      "missing_hours": 0
+    },
+    {
+      "country": "DK1",
+      "target": "offshore",
       "phase": "history",
+      "missing_hours": 0
+    },
+    {
+      "country": "DK2",
+      "target": "load",
+      "phase": "forecast",
       "missing_hours": 0
     },
     {
@@ -148,7 +461,19 @@
     {
       "country": "DK2",
       "target": "solar",
+      "phase": "forecast",
+      "missing_hours": 0
+    },
+    {
+      "country": "DK2",
+      "target": "solar",
       "phase": "history",
+      "missing_hours": 0
+    },
+    {
+      "country": "DK2",
+      "target": "onshore",
+      "phase": "forecast",
       "missing_hours": 0
     },
     {
@@ -160,7 +485,19 @@
     {
       "country": "DK2",
       "target": "offshore",
+      "phase": "forecast",
+      "missing_hours": 0
+    },
+    {
+      "country": "DK2",
+      "target": "offshore",
       "phase": "history",
+      "missing_hours": 0
+    },
+    {
+      "country": "ES",
+      "target": "load",
+      "phase": "forecast",
       "missing_hours": 0
     },
     {
@@ -172,7 +509,19 @@
     {
       "country": "ES",
       "target": "solar",
+      "phase": "forecast",
+      "missing_hours": 0
+    },
+    {
+      "country": "ES",
+      "target": "solar",
       "phase": "history",
+      "missing_hours": 0
+    },
+    {
+      "country": "ES",
+      "target": "onshore",
+      "phase": "forecast",
       "missing_hours": 0
     },
     {
@@ -184,7 +533,19 @@
     {
       "country": "PT",
       "target": "load",
+      "phase": "forecast",
+      "missing_hours": 0
+    },
+    {
+      "country": "PT",
+      "target": "load",
       "phase": "history",
+      "missing_hours": 0
+    },
+    {
+      "country": "PT",
+      "target": "solar",
+      "phase": "forecast",
       "missing_hours": 0
     },
     {
@@ -196,7 +557,19 @@
     {
       "country": "PT",
       "target": "onshore",
+      "phase": "forecast",
+      "missing_hours": 0
+    },
+    {
+      "country": "PT",
+      "target": "onshore",
       "phase": "history",
+      "missing_hours": 0
+    },
+    {
+      "country": "PT",
+      "target": "offshore",
+      "phase": "forecast",
       "missing_hours": 0
     },
     {
@@ -206,5 +579,5 @@
       "missing_hours": 0
     }
   ],
-  "complete": true
+  "complete": false
 }
