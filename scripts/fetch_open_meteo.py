@@ -109,6 +109,17 @@ def fetch_endpoint(
     try:
         payloads = request_json(url, params, timeout=min(config.timeout, 15), retries=1)
     except RuntimeError:
+        if start_date < end_date:
+            # A small daily request can succeed when a multi-day query stalls.
+            # Keep the same endpoint, points, variables and model policy.
+            print("Multi-day request stalled: retrying individual UTC days", flush=True)
+            days = []
+            cursor = start_date
+            while cursor <= end_date:
+                days.append(fetch_endpoint(url=url, points=points, start_date=cursor,
+                                           end_date=cursor, config=config))
+                cursor += timedelta(days=1)
+            return pd.concat(days, ignore_index=True)
         # Some multi-location requests stall even when the individual locations
         # work. Do not repeat the same stalled batch for several minutes.
         print(f"Batch timeout/error: retrying {len(points)} locations individually", flush=True)
