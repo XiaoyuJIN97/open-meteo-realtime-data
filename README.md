@@ -93,3 +93,8 @@ this field does not identify a resolved model run. Recovered historical-forecast
 values are tagged `retrospective_historical_forecast`: they are forecast API
 archives, not weather observations and not certified issue-time vintages.
 Original point locations and weather-variable definitions are unchanged.
+
+Requests share a persistent HTTP session. A GitHub-hosted diagnostic across all
+31 scopes observed 21/31 successful ordinary connections versus 31/31 successful
+pooled requests. Stalled multi-day batches are retried as daily windows, then
+individual locations, with exact coverage validation retained.
