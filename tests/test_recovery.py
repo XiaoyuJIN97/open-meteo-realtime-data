@@ -125,3 +125,18 @@ def test_stalled_batch_retries_individual_locations(monkeypatch):
     d=f.fetch_endpoint(url='test',points=f.selected_points('DE','solar'),start_date=day,end_date=day,config=fc)
     assert len(calls)==5 and len(d)==24
     assert d.temperature_2m_p1.iloc[0]==51.44 and d.temperature_2m_p4.iloc[0]==49.8
+
+
+def test_stalled_multi_day_request_retries_daily_without_changing_model(monkeypatch):
+    _,fc=f.load_config();day=date(2026,11,2);calls=[]
+    def request(url,params,**kwargs):
+        calls.append(params.copy())
+        if params['start_date'] != params['end_date']:
+            raise RuntimeError('large query timed out')
+        return [{'hourly':{'time':pd.date_range(params['start_date'],periods=24,freq='h').astype(str).tolist(),
+                            **{v:[1.]*24 for v in fc.hourly}}} for _ in range(4)]
+    monkeypatch.setattr(f,'request_json',request)
+    d=f.fetch_endpoint(url='test',points=f.selected_points('DE','solar'),start_date=day,end_date=day+timedelta(days=3),config=fc)
+    assert len(calls)==5 and len(d)==96 and not d.timestamp_utc.duplicated().any()
+    assert d.timestamp_utc.iloc[-1]==pd.Timestamp('2026-11-05T23:00:00Z')
+    assert all(c['hourly']==calls[0]['hourly'] for c in calls)
