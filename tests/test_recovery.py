@@ -111,3 +111,17 @@ def test_current_refresh_always_replaces_older_forecast(tmp_path,monkeypatch):
     f.append_raw(frame(day,day+timedelta(days=3),20.),'DE','solar')
     d=pd.read_csv(f.RAW_DIR/'DE'/'solar'/'2026.csv')
     assert len(d)==96 and d.temperature_2m_p1.eq(20.).all()
+
+
+def test_stalled_batch_retries_individual_locations(monkeypatch):
+    _,fc=f.load_config();day=date(2026,11,2);calls=[]
+    def request(url,params,**kwargs):
+        calls.append(params)
+        if isinstance(params['latitude'],str) and ',' in params['latitude']:
+            raise RuntimeError('batch timed out')
+        return {'hourly':{'time':pd.date_range(day,periods=24,freq='h').astype(str).tolist(),
+                          **{v:[params['latitude']]*24 for v in fc.hourly}}}
+    monkeypatch.setattr(f,'request_json',request)
+    d=f.fetch_endpoint(url='test',points=f.selected_points('DE','solar'),start_date=day,end_date=day,config=fc)
+    assert len(calls)==5 and len(d)==24
+    assert d.temperature_2m_p1.iloc[0]==51.44 and d.temperature_2m_p4.iloc[0]==49.8

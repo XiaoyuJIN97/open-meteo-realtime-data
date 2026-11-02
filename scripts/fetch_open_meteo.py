@@ -97,18 +97,25 @@ def fetch_endpoint(
     config: FetchConfig,
 ) -> pd.DataFrame:
     frames: list[pd.DataFrame] = []
-    payloads = request_json(
-        url,
-        {
-            "latitude": ",".join(str(float(x)) for x in points.gfs_lat),
-            "longitude": ",".join(str(float(x)) for x in points.gfs_lon),
-            "hourly": ",".join(config.hourly),
-            "start_date": start_date.isoformat(),
-            "end_date": end_date.isoformat(),
-            "timezone": config.timezone,
-            "wind_speed_unit": config.wind_speed_unit,
-        }, timeout=config.timeout, retries=config.retries,
-    )
+    params = {
+        "latitude": ",".join(str(float(x)) for x in points.gfs_lat),
+        "longitude": ",".join(str(float(x)) for x in points.gfs_lon),
+        "hourly": ",".join(config.hourly),
+        "start_date": start_date.isoformat(),
+        "end_date": end_date.isoformat(),
+        "timezone": config.timezone,
+        "wind_speed_unit": config.wind_speed_unit,
+    }
+    try:
+        payloads = request_json(url, params, timeout=min(config.timeout, 15), retries=1)
+    except RuntimeError:
+        # Some multi-location requests stall even when the individual locations
+        # work. Do not repeat the same stalled batch for several minutes.
+        print(f"Batch timeout/error: retrying {len(points)} locations individually", flush=True)
+        payloads = [request_json(url, {**params, "latitude": float(p.gfs_lat),
+                                      "longitude": float(p.gfs_lon)},
+                                 timeout=min(config.timeout, 30), retries=min(config.retries, 2))
+                    for p in points.itertuples(index=False)]
     if isinstance(payloads, dict):
         payloads = [payloads]
     if len(payloads) != len(points):
