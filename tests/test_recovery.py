@@ -102,3 +102,12 @@ def test_freshness_requires_evening_retrieval_and_full_context(tmp_path,monkeypa
                             run_id='y',path='data/y')])
     assert freshness.is_fresh(f.DATA_DIR,now=now,rolling_days=1,forecast_days=1)
     assert not freshness.is_fresh(f.DATA_DIR,now=now,rolling_days=2,forecast_days=1)
+
+
+def test_current_refresh_always_replaces_older_forecast(tmp_path,monkeypatch):
+    setup(tmp_path,monkeypatch)
+    day=date(2026,11,2)
+    f.append_raw(frame(day,day+timedelta(days=3),10.),'DE','solar')
+    f.append_raw(frame(day,day+timedelta(days=3),20.),'DE','solar')
+    d=pd.read_csv(f.RAW_DIR/'DE'/'solar'/'2026.csv')
+    assert len(d)==96 and d.temperature_2m_p1.eq(20.).all()

@@ -207,7 +207,7 @@ def append_raw(frame: pd.DataFrame, country: str, target: str) -> None:
             existing = pd.read_csv(path)
             existing["timestamp_utc"] = pd.to_datetime(existing["timestamp_utc"], utc=True)
             part = pd.concat([existing, part], ignore_index=True)
-        part = part.sort_values("timestamp_utc").drop_duplicates("timestamp_utc", keep="last")
+        part = part.drop_duplicates("timestamp_utc", keep="last").sort_values("timestamp_utc")
         atomic_csv(part, path)
 
 
