@@ -10,3 +10,29 @@ jobs:
           python-version: "3.11"
       - run: pip install -r requirements.txt pytest
       - run: python -m pytest -q
+  network-probe:
+    if: github.ref == 'refs/heads/codex/probe-weather-api'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - name: Compare request shapes on the public endpoint
+        run: |
+          python -u - <<'PY'
+          from datetime import datetime, UTC, timedelta
+          import requests, time
+          from scripts.fetch_open_meteo import selected_points, load_config
+          _,cfg=load_config();points=selected_points('FR','onshore');today=datetime.now(UTC).date()
+          params=dict(latitude=','.join(str(float(x)) for x in points.gfs_lat),longitude=','.join(str(float(x)) for x in points.gfs_lon),hourly=','.join(cfg.hourly),start_date=str(today),end_date=str(today+timedelta(days=3)),timezone='UTC',wind_speed_unit='ms')
+          session=requests.Session()
+          cases=[('plain',requests.get,params),('explicit_best_match',requests.get,{**params,'models':'best_match'}),('session',session.get,params),('daily',requests.get,{**params,'end_date':str(today)})]
+          for name,get,p in cases:
+              start=time.monotonic()
+              try:
+                  r=get(cfg.forecast_url,params=p,timeout=12)
+                  print(name,r.status_code,round(time.monotonic()-start,2),len(r.content),flush=True)
+              except Exception as e:print(name,type(e).__name__,round(time.monotonic()-start,2),flush=True)
+          PY
