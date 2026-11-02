@@ -1,6 +1,6 @@
 {
-  "run_id": "20261102T095757Z",
-  "generated_at_utc": "2026-11-02T10:09:34+00:00",
+  "run_id": "20261102T102747Z",
+  "generated_at_utc": "2026-11-02T10:28:11+00:00",
   "window_start": "2026-07-25",
   "window_end": "2026-11-05",
   "completed": [
@@ -47,164 +47,151 @@
       "rows": 96
     },
     {
-      "country": "DE",
-      "target": "solar",
-      "phase": "forecast",
-      "rows": 96
-    },
-    {
-      "country": "DE",
-      "target": "onshore",
-      "phase": "forecast",
-      "rows": 96
-    },
-    {
-      "country": "DE",
-      "target": "offshore",
-      "phase": "forecast",
-      "rows": 96
-    },
-    {
-      "country": "NL",
-      "target": "load",
-      "phase": "forecast",
-      "rows": 96
-    },
-    {
-      "country": "NL",
-      "target": "onshore",
-      "phase": "forecast",
-      "rows": 96
-    },
-    {
-      "country": "NL",
-      "target": "offshore",
-      "phase": "forecast",
-      "rows": 96
-    },
-    {
-      "country": "DK1",
-      "target": "load",
-      "phase": "forecast",
-      "rows": 96
-    },
-    {
-      "country": "DK1",
-      "target": "solar",
-      "phase": "forecast",
-      "rows": 96
-    },
-    {
-      "country": "DK1",
-      "target": "onshore",
-      "phase": "forecast",
-      "rows": 96
-    },
-    {
-      "country": "DK2",
-      "target": "load",
-      "phase": "forecast",
-      "rows": 96
-    },
-    {
-      "country": "DK2",
-      "target": "solar",
-      "phase": "forecast",
-      "rows": 96
-    },
-    {
-      "country": "DK2",
-      "target": "offshore",
-      "phase": "forecast",
-      "rows": 96
-    },
-    {
-      "country": "ES",
-      "target": "load",
-      "phase": "forecast",
-      "rows": 96
-    },
-    {
-      "country": "ES",
-      "target": "solar",
-      "phase": "forecast",
-      "rows": 96
-    },
-    {
-      "country": "ES",
-      "target": "onshore",
-      "phase": "forecast",
-      "rows": 96
-    },
-    {
-      "country": "PT",
-      "target": "solar",
-      "phase": "forecast",
-      "rows": 96
-    },
-    {
-      "country": "PT",
-      "target": "onshore",
-      "phase": "forecast",
-      "rows": 96
-    },
-    {
-      "country": "PT",
-      "target": "offshore",
-      "phase": "forecast",
-      "rows": 96
-    }
-  ],
-  "failures": [
-    {
       "country": "FR",
       "target": "offshore",
       "phase": "forecast",
-      "start": "2026-11-02",
-      "end": "2026-11-05",
-      "error": "Open-Meteo request failed after 2 attempts: HTTPSConnectionPool(host='api.open-meteo.com', port=443): Read timed out. (read timeout=30)"
+      "rows": 96
     },
     {
       "country": "DE",
       "target": "load",
       "phase": "forecast",
-      "start": "2026-11-02",
-      "end": "2026-11-05",
-      "error": "Open-Meteo request failed after 2 attempts: HTTPSConnectionPool(host='api.open-meteo.com', port=443): Read timed out. (read timeout=30)"
+      "rows": 96
+    },
+    {
+      "country": "DE",
+      "target": "solar",
+      "phase": "forecast",
+      "rows": 96
+    },
+    {
+      "country": "DE",
+      "target": "onshore",
+      "phase": "forecast",
+      "rows": 96
+    },
+    {
+      "country": "DE",
+      "target": "offshore",
+      "phase": "forecast",
+      "rows": 96
+    },
+    {
+      "country": "NL",
+      "target": "load",
+      "phase": "forecast",
+      "rows": 96
     },
     {
       "country": "NL",
       "target": "solar",
       "phase": "forecast",
-      "start": "2026-11-02",
-      "end": "2026-11-05",
-      "error": "Open-Meteo request failed after 2 attempts: HTTPSConnectionPool(host='api.open-meteo.com', port=443): Read timed out. (read timeout=30)"
+      "rows": 96
+    },
+    {
+      "country": "NL",
+      "target": "onshore",
+      "phase": "forecast",
+      "rows": 96
+    },
+    {
+      "country": "NL",
+      "target": "offshore",
+      "phase": "forecast",
+      "rows": 96
+    },
+    {
+      "country": "DK1",
+      "target": "load",
+      "phase": "forecast",
+      "rows": 96
+    },
+    {
+      "country": "DK1",
+      "target": "solar",
+      "phase": "forecast",
+      "rows": 96
+    },
+    {
+      "country": "DK1",
+      "target": "onshore",
+      "phase": "forecast",
+      "rows": 96
     },
     {
       "country": "DK1",
       "target": "offshore",
       "phase": "forecast",
-      "start": "2026-11-02",
-      "end": "2026-11-05",
-      "error": "Open-Meteo request failed after 2 attempts: HTTPSConnectionPool(host='api.open-meteo.com', port=443): Read timed out. (read timeout=30)"
+      "rows": 96
+    },
+    {
+      "country": "DK2",
+      "target": "load",
+      "phase": "forecast",
+      "rows": 96
+    },
+    {
+      "country": "DK2",
+      "target": "solar",
+      "phase": "forecast",
+      "rows": 96
     },
     {
       "country": "DK2",
       "target": "onshore",
       "phase": "forecast",
-      "start": "2026-11-02",
-      "end": "2026-11-05",
-      "error": "Open-Meteo request failed after 2 attempts: HTTPSConnectionPool(host='api.open-meteo.com', port=443): Read timed out. (read timeout=30)"
+      "rows": 96
+    },
+    {
+      "country": "DK2",
+      "target": "offshore",
+      "phase": "forecast",
+      "rows": 96
+    },
+    {
+      "country": "ES",
+      "target": "load",
+      "phase": "forecast",
+      "rows": 96
+    },
+    {
+      "country": "ES",
+      "target": "solar",
+      "phase": "forecast",
+      "rows": 96
+    },
+    {
+      "country": "ES",
+      "target": "onshore",
+      "phase": "forecast",
+      "rows": 96
     },
     {
       "country": "PT",
       "target": "load",
       "phase": "forecast",
-      "start": "2026-11-02",
-      "end": "2026-11-05",
-      "error": "Open-Meteo request failed after 2 attempts: HTTPSConnectionPool(host='api.open-meteo.com', port=443): Read timed out. (read timeout=30)"
+      "rows": 96
+    },
+    {
+      "country": "PT",
+      "target": "solar",
+      "phase": "forecast",
+      "rows": 96
+    },
+    {
+      "country": "PT",
+      "target": "onshore",
+      "phase": "forecast",
+      "rows": 96
+    },
+    {
+      "country": "PT",
+      "target": "offshore",
+      "phase": "forecast",
+      "rows": 96
     }
   ],
+  "failures": [],
   "coverage": [
     {
       "country": "BE",
@@ -579,5 +566,5 @@
       "missing_hours": 0
     }
   ],
-  "complete": false
+  "complete": true
 }
