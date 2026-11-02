@@ -140,3 +140,24 @@ def test_stalled_multi_day_request_retries_daily_without_changing_model(monkeypa
     assert len(calls)==5 and len(d)==96 and not d.timestamp_utc.duplicated().any()
     assert d.timestamp_utc.iloc[-1]==pd.Timestamp('2026-11-05T23:00:00Z')
     assert all(c['hourly']==calls[0]['hourly'] for c in calls)
+
+
+def test_http_connection_is_reused_across_retries_and_requests(monkeypatch):
+    import requests
+    from types import SimpleNamespace
+    calls=[]
+    class Response:
+        status_code=200
+        def raise_for_status(self):pass
+        def json(self):return {'ok':True}
+    responses=iter([requests.ReadTimeout('transient'),Response(),Response()])
+    def get(url,**kw):
+        calls.append((url,kw))
+        item=next(responses)
+        if isinstance(item,Exception):raise item
+        return item
+    monkeypatch.setattr(f,'HTTP_SESSION',SimpleNamespace(get=get))
+    monkeypatch.setattr(f.time,'sleep',lambda _:None)
+    assert f.request_json('test',{'latitude':1},timeout=15,retries=2)=={'ok':True}
+    assert f.request_json('test',{'latitude':2},timeout=15,retries=1)=={'ok':True}
+    assert len(calls)==3 and calls[-1][1]['params']['latitude']==2

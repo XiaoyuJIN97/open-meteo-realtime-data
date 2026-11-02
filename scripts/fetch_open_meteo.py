@@ -23,6 +23,8 @@ DATA_DIR = REPO_ROOT / "data"
 RAW_DIR = DATA_DIR / "raw"
 UPDATES_DIR = DATA_DIR / "updates"
 MANIFEST_PATH = DATA_DIR / "update_manifest.csv"
+# Reuse TLS connections: GitHub-hosted fresh connections can intermittently stall.
+HTTP_SESSION = requests.Session()
 
 
 @dataclass(frozen=True)
@@ -77,7 +79,7 @@ def request_json(url: str, params: dict[str, Any], *, timeout: int, retries: int
             # A batched call contains four locations. Pace recovery below the
             # public endpoint's per-minute request allowance.
             time.sleep(0.5)
-            response = requests.get(url, params=params, timeout=timeout)
+            response = HTTP_SESSION.get(url, params=params, timeout=timeout)
             if response.status_code == 429:
                 time.sleep(min(float(response.headers.get("Retry-After", 60)), 60))
             response.raise_for_status()
