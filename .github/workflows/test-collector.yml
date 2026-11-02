@@ -28,11 +28,18 @@ jobs:
           _,cfg=load_config();points=selected_points('FR','onshore');today=datetime.now(UTC).date()
           params=dict(latitude=','.join(str(float(x)) for x in points.gfs_lat),longitude=','.join(str(float(x)) for x in points.gfs_lon),hourly=','.join(cfg.hourly),start_date=str(today),end_date=str(today+timedelta(days=3)),timezone='UTC',wind_speed_unit='ms')
           session=requests.Session()
-          cases=[('plain',requests.get,params),('explicit_best_match',requests.get,{**params,'models':'best_match'}),('session',session.get,params),('daily',requests.get,{**params,'end_date':str(today)})]
-          for name,get,p in cases:
-              start=time.monotonic()
-              try:
-                  r=get(cfg.forecast_url,params=p,timeout=12)
-                  print(name,r.status_code,round(time.monotonic()-start,2),len(r.content),flush=True)
-              except Exception as e:print(name,type(e).__name__,round(time.monotonic()-start,2),flush=True)
+          from scripts.fetch_open_meteo import expected_scopes
+          app,_=load_config();counts={'plain':0,'session':0}
+          for country,target in expected_scopes(app):
+              points=selected_points(country,target)
+              p={**params,'latitude':','.join(str(float(x)) for x in points.gfs_lat),'longitude':','.join(str(float(x)) for x in points.gfs_lon)}
+              for name,get in [('plain',requests.get),('session',session.get)]:
+                  start=time.monotonic()
+                  try:
+                      r=get(cfg.forecast_url,params=p,timeout=6)
+                      ok=r.status_code==200 and len(r.json())==4
+                      counts[name]+=int(ok)
+                      print(country,target,name,r.status_code,round(time.monotonic()-start,2),flush=True)
+                  except Exception as e:print(country,target,name,type(e).__name__,round(time.monotonic()-start,2),flush=True)
+          print('TOTAL',counts,flush=True)
           PY
