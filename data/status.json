@@ -1,8 +1,8 @@
 {
-  "run_id": "20261122T204742Z",
-  "generated_at_utc": "2026-11-22T20:48:12+00:00",
-  "window_start": "2026-08-14",
-  "window_end": "2026-11-25",
+  "run_id": "20261127T225225Z",
+  "generated_at_utc": "2026-11-27T22:53:27+00:00",
+  "window_start": "2026-08-19",
+  "window_end": "2026-11-30",
   "completed": [
     {
       "country": "BE",
@@ -189,6 +189,192 @@
       "target": "offshore",
       "phase": "forecast",
       "rows": 96
+    },
+    {
+      "country": "BE",
+      "target": "load",
+      "phase": "history",
+      "rows": 24
+    },
+    {
+      "country": "BE",
+      "target": "solar",
+      "phase": "history",
+      "rows": 24
+    },
+    {
+      "country": "BE",
+      "target": "onshore",
+      "phase": "history",
+      "rows": 24
+    },
+    {
+      "country": "BE",
+      "target": "offshore",
+      "phase": "history",
+      "rows": 24
+    },
+    {
+      "country": "FR",
+      "target": "load",
+      "phase": "history",
+      "rows": 24
+    },
+    {
+      "country": "FR",
+      "target": "solar",
+      "phase": "history",
+      "rows": 24
+    },
+    {
+      "country": "FR",
+      "target": "onshore",
+      "phase": "history",
+      "rows": 24
+    },
+    {
+      "country": "FR",
+      "target": "offshore",
+      "phase": "history",
+      "rows": 24
+    },
+    {
+      "country": "DE",
+      "target": "load",
+      "phase": "history",
+      "rows": 24
+    },
+    {
+      "country": "DE",
+      "target": "solar",
+      "phase": "history",
+      "rows": 24
+    },
+    {
+      "country": "DE",
+      "target": "onshore",
+      "phase": "history",
+      "rows": 24
+    },
+    {
+      "country": "DE",
+      "target": "offshore",
+      "phase": "history",
+      "rows": 24
+    },
+    {
+      "country": "NL",
+      "target": "load",
+      "phase": "history",
+      "rows": 24
+    },
+    {
+      "country": "NL",
+      "target": "solar",
+      "phase": "history",
+      "rows": 24
+    },
+    {
+      "country": "NL",
+      "target": "onshore",
+      "phase": "history",
+      "rows": 24
+    },
+    {
+      "country": "NL",
+      "target": "offshore",
+      "phase": "history",
+      "rows": 24
+    },
+    {
+      "country": "DK1",
+      "target": "load",
+      "phase": "history",
+      "rows": 24
+    },
+    {
+      "country": "DK1",
+      "target": "solar",
+      "phase": "history",
+      "rows": 24
+    },
+    {
+      "country": "DK1",
+      "target": "onshore",
+      "phase": "history",
+      "rows": 24
+    },
+    {
+      "country": "DK1",
+      "target": "offshore",
+      "phase": "history",
+      "rows": 24
+    },
+    {
+      "country": "DK2",
+      "target": "load",
+      "phase": "history",
+      "rows": 24
+    },
+    {
+      "country": "DK2",
+      "target": "solar",
+      "phase": "history",
+      "rows": 24
+    },
+    {
+      "country": "DK2",
+      "target": "onshore",
+      "phase": "history",
+      "rows": 24
+    },
+    {
+      "country": "DK2",
+      "target": "offshore",
+      "phase": "history",
+      "rows": 24
+    },
+    {
+      "country": "ES",
+      "target": "load",
+      "phase": "history",
+      "rows": 24
+    },
+    {
+      "country": "ES",
+      "target": "solar",
+      "phase": "history",
+      "rows": 24
+    },
+    {
+      "country": "ES",
+      "target": "onshore",
+      "phase": "history",
+      "rows": 24
+    },
+    {
+      "country": "PT",
+      "target": "load",
+      "phase": "history",
+      "rows": 24
+    },
+    {
+      "country": "PT",
+      "target": "solar",
+      "phase": "history",
+      "rows": 24
+    },
+    {
+      "country": "PT",
+      "target": "onshore",
+      "phase": "history",
+      "rows": 24
+    },
+    {
+      "country": "PT",
+      "target": "offshore",
+      "phase": "history",
+      "rows": 24
     }
   ],
   "failures": [],
